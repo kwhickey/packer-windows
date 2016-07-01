@@ -3,10 +3,10 @@
 * Forked from joefitzgerald/packer-windows
 * Updated Packer to v0.10.0
 * Updates to the Windows 2012 R2 Packer build file
-** Running fully with the Packer WinRm communicator. No longer uses SSH
-** New approach to provisioning Windows Updates
+  * Running fully with the Packer WinRm communicator. No longer uses SSH
+  * New approach to provisioning Windows Updates
 * Updates to the Windows 2012 R2 Vagrant template
-** Running fully with the Packer WinRm communicator. No longer uses SSH
+  * Running fully with the Packer WinRm communicator. No longer uses SSH
 * Provision WMF 5 and PowerShell 5 in order to make use of the `PackageManagement` module to pull down provisioning packages 
 * Rebuilt the Windows Update script to use the `PSWindowsUpdate` PowerShell module
 * Changed the way the VirtualBox extensions are installed on the VM (through attaching rather than uploaded)

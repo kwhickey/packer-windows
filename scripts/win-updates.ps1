@@ -3,7 +3,7 @@ Param(
     [Int]$MaxPasses=5,
     [String]$AutoLogonUsername="vagrant",
     [String]$AutoLogonPassword="vagrant",
-    [String]$RestartResumeTriggerType="StartupFolder"
+    [String]$RestartResumeTriggerType="Registry"
 )
 
 # =================================================================================================================
@@ -138,13 +138,16 @@ function Check-ContinueRestartOrEnd() {
 function Install-WindowsUpdates() {
     $script:Pass++
     LogInfo "Beginning Install of Available Updates"
-    #DEBUGGING
+    Invoke-Expression "Get-WUInstall $script:WUInstallOptions"
+    #DEBUGGING (in place of previous line)
+    <# 
     $sleepWork = Get-Random -minimum 2 -maximum 5
     LogDebug "Sleeping for $sleepWork to simulate installing updates"
     Start-Sleep -s $sleepWork
-    #Invoke-Expression "Get-WUInstall $script:WUInstallOptions"
     $script:IsRestartRequired = $True
+    #>
     #END DEBUGGING
+    
     LogInfo "Completed Install of Available Updates"
 
     if ($(Get-WURebootStatus -Silent)) {
