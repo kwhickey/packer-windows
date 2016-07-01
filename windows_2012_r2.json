@@ -2,17 +2,21 @@
   "builders": [
     {
       "type": "vmware-iso",
+      "communicator": "winrm",
       "iso_url": "{{user `iso_url`}}",
       "iso_checksum_type": "{{user `iso_checksum_type`}}",
       "iso_checksum": "{{user `iso_checksum`}}",
       "headless": true,
-      "boot_wait": "2m",
-      "ssh_username": "vagrant",
-      "ssh_password": "vagrant",
-      "ssh_wait_timeout": "6h",
-      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+      "boot_wait": "1m",
+      "winrm_username": "vagrant",
+      "winrm_password": "vagrant",
+      "winrm_port": "5985",
+      "winrm_timeout": "8h",
+      "winrm_insecure": "true",
+      "shutdown_command": "C:/Windows/System32/Sysprep/sysprep.exe /generalize /oobe /unattend:A:/sysprep-shutdown-unattend.xml /quiet /shutdown",
+      "shutdown_timeout": "15m",
       "guest_os_type": "windows8srv-64",
-      "tools_upload_flavor": "windows",
+      "tools_upload_flavor": "",
       "disk_size": 61440,
       "vnc_port_min": 5900,
       "vnc_port_max": 5980,
@@ -20,7 +24,8 @@
         "{{user `autounattend`}}",
         "./scripts/microsoft-updates.bat",
         "./scripts/win-updates.ps1",
-        "./scripts/openssh.ps1"
+        "./scripts/defaultuser-win-explorer.bat",
+        "./scripts/sysprep-shutdown-unattend.xml"
       ],
       "vmx_data": {
         "RemoteDisplay.vnc.enabled": "false",
@@ -32,23 +37,29 @@
     },
     {
       "type": "virtualbox-iso",
+      "communicator": "winrm",
       "iso_url": "{{user `iso_url`}}",
       "iso_checksum_type": "{{user `iso_checksum_type`}}",
       "iso_checksum": "{{user `iso_checksum`}}",
       "headless": true,
-      "boot_wait": "2m",
-      "ssh_username": "vagrant",
-      "ssh_password": "vagrant",
-      "ssh_wait_timeout": "6h",
-      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+      "boot_wait": "1m",
+      "winrm_username": "vagrant",
+      "winrm_password": "vagrant",
+      "winrm_port": "5985",
+      "winrm_timeout": "8h",
+      "winrm_insecure": "true",
+      "shutdown_command": "C:/Windows/System32/Sysprep/sysprep.exe /generalize /oobe /unattend:A:/sysprep-shutdown-unattend.xml /quiet /shutdown",
+      "shutdown_timeout": "15m",
       "guest_os_type": "Windows2012_64",
+      "guest_additions_mode": "attach",
       "disk_size": 61440,
       "floppy_files": [
         "{{user `autounattend`}}",
         "./scripts/microsoft-updates.bat",
         "./scripts/win-updates.ps1",
-        "./scripts/openssh.ps1",
-        "./scripts/oracle-cert.cer"
+        "./scripts/oracle-cert.cer",
+        "./scripts/defaultuser-win-explorer.bat",
+        "./scripts/sysprep-shutdown-unattend.xml"
       ],
       "vboxmanage": [
         [
@@ -68,16 +79,52 @@
   ],
   "provisioners": [
     {
-      "type": "shell",
-      "remote_path": "/tmp/script.bat",
-      "execute_command": "{{.Vars}} cmd /c C:/Windows/Temp/script.bat",
+      "type": "windows-shell",
+      "remote_path": "C:/Windows/Temp/script.bat",
+      "execute_command": "{{ .Vars }} cmd /C \"{{ .Path }}\"",
       "scripts": [
+        "./scripts/resync-clock.bat",
         "./scripts/vm-guest-tools.bat",
-        "./scripts/vagrant-ssh.bat",
         "./scripts/enable-rdp.bat",
-        "./scripts/compile-dotnet-assemblies.bat",
-        "./scripts/disable-auto-logon.bat",
-        "./scripts/compact.bat"
+        "./scripts/disable-auto-logon.bat"
+      ]
+    },
+    {
+      "type": "powershell",
+      "elevated_user": "vagrant",
+      "elevated_password": "vagrant",
+      "remote_path": "C:/Windows/Temp/script.ps1",
+      "scripts": [
+        "./scripts/install-ps5-wmf5.ps1"
+      ]
+    },
+    {
+      "type": "windows-restart"
+    },
+    {
+      "type": "powershell",
+      "elevated_user": "vagrant",
+      "elevated_password": "vagrant",
+      "inline": [
+        "Write-Host '[DEBUG] Printing PS Version'",
+        "$PSVersionTable",
+        "Write-Host '[DEBUG] Installing Chocolatey Package Provider for OneGet'",
+        "Install-PackageProvider Chocolatey -ForceBootstrap -Scope AllUsers -Force -Confirm:$False | Out-Null",
+        "Write-Host '[DEBUG] Registering chocolatey package source'",
+        "if (Get-PackageSource | Where-Object -Property Name -eq 'chocolatey') { Write-Host 'Found chocolatey Package Source registered. Trusting it.'; Set-PackageSource -Name chocolatey -Trusted -Force | Out-Null } else { Write-Host 'chocolatey Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName Chocolatey -Name chocolatey -Location 'http://chocolatey.org/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
+        "Write-Host '[DEBUG] Done setting up Chocolatey in PackageManagement'",
+        "if (Get-PackageSource | Where-Object -Property Name -eq 'PSGallery') { Write-Host 'Found PSGallery Package Source registered. Trusting it.'; Set-PackageSource -Name PSGallery -Trusted -Force | Out-Null } else { Write-Host 'PSGallery Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName PowerShellGet -Name PSGallery -Location 'https://www.powershellgallery.com/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
+        "Write-Host '[DEBUG] Done setting up PowerShellGet in PackageManagement'",
+        "Install-Package -ProviderName PowerShellGet -Source PSGallery -Name PSWindowsUpdate -Force -Confirm:$False"
+      ]
+    },
+    {
+      "type": "powershell",
+      "elevated_user": "vagrant",
+      "elevated_password": "vagrant",
+      "remote_path": "C:/Windows/Temp/script.ps1",
+      "scripts": [
+        "./scripts/win-updates.ps1"
       ]
     }
   ],
@@ -85,7 +132,7 @@
     {
       "type": "vagrant",
       "keep_input_artifact": false,
-      "output": "windows_2012_r2_{{.Provider}}.box",
+      "output": "../../../Vagrant/BaseBoxes/windows_2012_r2_{{.Provider}}.box",
       "vagrantfile_template": "vagrantfile-windows_2012_r2.template"
     }
   ],
