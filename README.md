@@ -1,5 +1,16 @@
 # Windows Templates for Packer
 
+
+_** **NOTE** **_
+
+_The below README.md content is out-of date after forking from [joefitzgerald/packer-windows](https://github.com/joefitzgerald/packer-windows "joefitzgerald/packer-windows"), and making modifications. It needs to be updated to reflect the modifications listed under "Unreleased" in the CHANGELOG.md file._
+
+---
+
+&#8595; _**OUTDATED CONTENT**_ &#8595;
+
+---
+
 ### Introduction
 
 This repository contains Windows templates that can be used to create boxes for Vagrant using Packer ([Website](http://www.packer.io)) ([Github](http://github.com/mitchellh/packer)).
