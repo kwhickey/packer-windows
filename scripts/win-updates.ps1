@@ -233,6 +233,9 @@ $script:ScriptUnboundArgs = $($MyInvocation.UnboundArguments | Out-String)
 
 $Logfile = "$scriptDirectory\win-updates.log"
 
+# Create a marker file that shows the process ID that was running for this pass, to allow later checks if still running
+New-Item -Type File -Path "$scriptDirectory\win-updates-pass-$('{0:D2}' -f $Pass)-pid-$PID.log"
+
 $script:SearchResult = $null
 $script:WUInstallOptions = "-MicrosoftUpdate -AcceptAll -IgnoreUserInput -IgnoreReboot -NotCategory 'Language Packs' -Confirm:`$False -ShowSearchCriteria -Verbose"
 

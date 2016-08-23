@@ -59,25 +59,21 @@
         "./scripts/win-updates.ps1",
         "./scripts/oracle-cert.cer",
         "./scripts/defaultuser-win-explorer.bat",
-        "./scripts/sysprep-shutdown-unattend.xml"
+        "./scripts/sysprep-shutdown-unattend.xml",
+        "./scripts/win-updates.ps1"
       ],
       "vboxmanage": [
-        [
-          "modifyvm",
-          "{{.Name}}",
-          "--memory",
-          "2048"
-        ],
-        [
-          "modifyvm",
-          "{{.Name}}",
-          "--cpus",
-          "2"
-        ]
+        ["modifyvm", "{{.Name}}", "--natpf1", "guest_winrm,tcp,,55985,,5985"],
+        ["modifyvm", "{{.Name}}", "--memory", "2048"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"]
       ]
     }
   ],
   "provisioners": [
+    {
+      "type": "shell-local",
+      "command": "echo %COMPUTERNAME%"
+    },
     {
       "type": "windows-shell",
       "remote_path": "C:/Windows/Temp/script.bat",
@@ -111,9 +107,9 @@
         "Write-Host '[DEBUG] Installing Chocolatey Package Provider for OneGet'",
         "Install-PackageProvider Chocolatey -ForceBootstrap -Scope AllUsers -Force -Confirm:$False | Out-Null",
         "Write-Host '[DEBUG] Registering chocolatey package source'",
-        "if (Get-PackageSource | Where-Object -Property Name -eq 'chocolatey') { Write-Host 'Found chocolatey Package Source registered. Trusting it.'; Set-PackageSource -Name chocolatey -Trusted -Force | Out-Null } else { Write-Host 'chocolatey Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName Chocolatey -Name chocolatey -Location 'http://chocolatey.org/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
+        "if (Get-PackageSource | Where-Object -Property Name -eq 'chocolatey') { Write-Host '[DEBUG] Found chocolatey Package Source registered. Trusting it.'; Set-PackageSource -Name chocolatey -Trusted -Force | Out-Null } else { Write-Host '[DEBUG] chocolatey Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName Chocolatey -Name chocolatey -Location 'http://chocolatey.org/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
         "Write-Host '[DEBUG] Done setting up Chocolatey in PackageManagement'",
-        "if (Get-PackageSource | Where-Object -Property Name -eq 'PSGallery') { Write-Host 'Found PSGallery Package Source registered. Trusting it.'; Set-PackageSource -Name PSGallery -Trusted -Force | Out-Null } else { Write-Host 'PSGallery Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName PowerShellGet -Name PSGallery -Location 'https://www.powershellgallery.com/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
+        "if (Get-PackageSource | Where-Object -Property Name -eq 'PSGallery') { Write-Host '[DEBUG] Found PSGallery Package Source registered. Trusting it.'; Set-PackageSource -Name PSGallery -Trusted -Force | Out-Null } else { Write-Host '[DEBUG] PSGallery Package Source not found. Registering it as trusted.'; Register-PackageSource -ProviderName PowerShellGet -Name PSGallery -Location 'https://www.powershellgallery.com/api/v2/' -Trusted -Force -Confirm:$False | Out-Null }",
         "Write-Host '[DEBUG] Done setting up PowerShellGet in PackageManagement'",
         "Install-Package -ProviderName PowerShellGet -Source PSGallery -Name PSWindowsUpdate -Force -Confirm:$False"
       ]
@@ -123,8 +119,9 @@
       "elevated_user": "vagrant",
       "elevated_password": "vagrant",
       "remote_path": "C:/Windows/Temp/script.ps1",
-      "scripts": [
-        "./scripts/win-updates.ps1"
+      "valid_exit_codes": [0, 259],
+      "inline": [
+        "if (![String]::IsNullOrWhiteSpace('{{user `do_windows_updates`}}') -and [System.Convert]::ToBoolean('{{user `do_windows_updates`}}')) { Write-Host '[DEBUG] Configured to run scripted Windows Updates'; A:/win-updates.ps1; exit $LastExitCode } else { Write-Host \"[DEBUG] Skipping scripted Windows Updates based on value of user variable 'do_windows_updates'\"}"
       ]
     }
   ],
@@ -140,6 +137,7 @@
     "iso_url": "http://download.microsoft.com/download/6/2/A/62A76ABB-9990-4EFC-A4FE-C7D698DAEB96/9600.16384.WINBLUE_RTM.130821-1623_X64FRE_SERVER_EVAL_EN-US-IRM_SSS_X64FREE_EN-US_DV5.ISO",
     "iso_checksum_type": "md5",
     "iso_checksum": "458ff91f8abc21b75cb544744bf92e6a",
-    "autounattend": "./answer_files/2012_r2/Autounattend.xml"
+    "autounattend": "./answer_files/2012_r2/Autounattend.xml",
+    "do_windows_updates": "false"
   }
 }

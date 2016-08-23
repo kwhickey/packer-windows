@@ -1,7 +1,8 @@
 Param(
-  [string]VmDir="~/VirtualMachines"
-  [string]VagrantDir="$VmDir/Vagrant",
-  [string]PackerTemplatesDir="$VmDir/Packer/WindowsTemplates"
+  [string]$VmDir="$(Resolve-Path ~)\VirtualMachines",
+  [string]$VagrantDir="$(Resolve-Path $VmDir)\Vagrant",
+  [string]$PackerTemplatesDir="$(Resolve-Path .)",
+  [bool]$PackerLog=$False
 )
 
 # Override default PowerShell behavior to NOT continue on error.
@@ -26,15 +27,22 @@ function Exec([scriptblock]$cmd, [string]$errorMessage = "Error executing comman
 }
 
 cd "$VagrantDir\windows_2012_r2_virtualbox"
-#Exec { vagrant halt; }
-#Exec { vagrant destroy -f; }
-$boxes = Exec { vagrant box list }
-if ($boxes -like "*windows_2012_r2_virtualbox*") { Exec { vagrant box remove windows_2012_r2_virtualbox } }
+if ($(Exec { vagrant status }) -like "*running*") { Exec { vagrant halt; } }
+if ($(Exec { vagrant status }) -like "*poweroff*") { Exec { vagrant destroy -f; } }
+if ($(Exec { vagrant box list }) -like "*windows_2012_r2_virtualbox*") { Exec { vagrant box remove windows_2012_r2_virtualbox } }
 cd "$PackerTemplatesDir"
-$Env:PACKER_LOG=0
+
+# Having PACKER_LOG set to ANYTHING will enable debug logging to console
+if ($PackerLog) {
+  New-Item Env:\PACKER_LOG -Value 1 -ErrorAction SilentlyContinue
+}
+else {
+  Remove-Item Env:\PACKER_LOG -ErrorAction SilentlyContinue # Having PACKER_LOG set to ANYTHING will enable debug logging to console
+}
+
 Exec { packer validate -only=virtualbox-iso .\windows_2012_r2.json; }
 Exec { packer build -only=virtualbox-iso .\windows_2012_r2.json; }
-Exec { vagrant box add --name windows_2012_r2_virtualbox "$VagrantDir\Vagrant\BaseBoxes\windows_2012_r2_virtualbox.box" }
+Exec { vagrant box add --name windows_2012_r2_virtualbox "$VagrantDir\BaseBoxes\windows_2012_r2_virtualbox.box" }
 cd "$VagrantDir\windows_2012_r2_virtualbox"
 Exec { vagrant up; }
 Exec { vagrant rdp; }
