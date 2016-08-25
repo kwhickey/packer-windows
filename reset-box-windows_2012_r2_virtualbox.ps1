@@ -26,10 +26,27 @@ function Exec([scriptblock]$cmd, [string]$errorMessage = "Error executing comman
   }
 }
 
+# Ensure required directories are present
+if (-not (Test-Path -PathType Container "$VmDir")) {
+  New-Item -ItemType Directory -Force -Path "$VmDir"
+}
+
+if (-not (Test-Path -PathType Container "$VagrantDir")) {
+  New-Item -ItemType Directory -Force -Path "$VagrantDir"
+}
+
+if (-not (Test-Path -PathType Container "$VagrantDir\BaseBoxes")) {
+  New-Item -ItemType Directory -Force -Path "$VagrantDir\BaseBoxes"
+}
+
+if (-not (Test-Path -PathType Container "$VagrantDir\windows_2012_r2_virtualbox")) {
+  New-Item -ItemType Directory -Force -Path "$VagrantDir\windows_2012_r2_virtualbox"
+}
+
 cd "$VagrantDir\windows_2012_r2_virtualbox"
-if ($(Exec { vagrant status }) -like "*running*") { Exec { vagrant halt; } }
-if ($(Exec { vagrant status }) -like "*poweroff*") { Exec { vagrant destroy -f; } }
-if ($(Exec { vagrant box list }) -like "*windows_2012_r2_virtualbox*") { Exec { vagrant box remove windows_2012_r2_virtualbox } }
+if ($(& { vagrant status }) -like "*running*") { Exec { vagrant halt; } }
+if ($(& { vagrant status }) -like "*poweroff*") { Exec { vagrant destroy -f; } }
+if ($(& { vagrant box list }) -like "*windows_2012_r2_virtualbox*") { Exec { vagrant box remove windows_2012_r2_virtualbox } }
 cd "$PackerTemplatesDir"
 
 # Having PACKER_LOG set to ANYTHING will enable debug logging to console
@@ -41,7 +58,7 @@ else {
 }
 
 Exec { packer validate -only=virtualbox-iso .\windows_2012_r2.json; }
-Exec { packer build -only=virtualbox-iso .\windows_2012_r2.json; }
+Exec { packer build -only=virtualbox-iso -var "`'output_dir=$VagrantDir\BaseBoxes`'" .\windows_2012_r2.json; }
 Exec { vagrant box add --name windows_2012_r2_virtualbox "$VagrantDir\BaseBoxes\windows_2012_r2_virtualbox.box" }
 cd "$VagrantDir\windows_2012_r2_virtualbox"
 Exec { vagrant up; }

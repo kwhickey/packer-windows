@@ -129,7 +129,7 @@
     {
       "type": "vagrant",
       "keep_input_artifact": false,
-      "output": "../../../Vagrant/BaseBoxes/windows_2012_r2_{{.Provider}}.box",
+      "output": "{{user `output_dir`}}/windows_2012_r2_{{.Provider}}.box",
       "vagrantfile_template": "vagrantfile-windows_2012_r2.template"
     }
   ],
@@ -138,6 +138,7 @@
     "iso_checksum_type": "md5",
     "iso_checksum": "458ff91f8abc21b75cb544744bf92e6a",
     "autounattend": "./answer_files/2012_r2/Autounattend.xml",
-    "do_windows_updates": "false"
+    "do_windows_updates": "false",
+    "output_dir": "."
   }
 }
